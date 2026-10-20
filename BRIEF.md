@@ -42,6 +42,8 @@ Service A ──(service-to-service)──▶ Service B
 
 ## Open decisions (for the grilling session to resolve)
 
+_Resolved in the grilling session on 2026-10-20: see `GLOSSARY.md`, `docs/adr/` and the spec._
+
 - Business domain for A and B (e.g. Orders → Catalog)? Keep it trivial.
 - Backend stack? (Available locally: Java 21, Node 22, Docker.)
 - Frontend stack?
@@ -63,8 +65,9 @@ Service A ──(service-to-service)──▶ Service B
 
 ## Working agreement with the agent
 
-- First ticket is a **walking skeleton**: Keycloak + one service + one protected endpoint +
-  frontend login, end-to-end in docker-compose. Then grow by vertical slices.
+- First ticket is a **walking skeleton** through the riskiest path: a Customer logs in and sees
+  the Product list, served by Orders from Catalog via a client-credentials token, end-to-end in
+  docker-compose. No ordering yet. Then grow by vertical slices.
 - Tests first (`tdd`), one slice at a time.
 - Ask, don't assume — especially on auth decisions. Record decisions as ADRs.
 - Keycloak config differs between versions: verify against the docs for the pinned version.
