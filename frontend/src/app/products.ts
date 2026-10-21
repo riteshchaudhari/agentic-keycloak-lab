@@ -19,12 +19,16 @@ interface Product {
       @for (product of products(); track product.id) {
         <li>
           <span class="name">{{ product.name }}</span>
-          <span class="price">{{ product.priceCents / 100 | currency: 'EUR' : 'symbol' : '1.2-2' : 'en' }}</span>
+          <span class="price">{{
+            product.priceCents / 100 | currency: 'EUR' : 'symbol' : '1.2-2' : 'en'
+          }}</span>
         </li>
       }
     </ul>
   `,
 })
 export class Products {
-  protected readonly products = toSignal(inject(HttpClient).get<Product[]>('/api/products'), { initialValue: [] });
+  protected readonly products = toSignal(inject(HttpClient).get<Product[]>('/api/products'), {
+    initialValue: [],
+  });
 }

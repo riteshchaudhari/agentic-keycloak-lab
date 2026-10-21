@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -22,6 +22,9 @@ class CatalogClient {
 
 	private static final String REGISTRATION = "catalog";
 
+	/** Key under which the service's own token is cached; carries no authorities and grants nothing. */
+	private static final Authentication SERVICE = UsernamePasswordAuthenticationToken.unauthenticated("orders-service", null);
+
 	private final RestClient http;
 
 	CatalogClient(RestClient.Builder builder, @Value("${catalog.base-url}") String baseUrl,
@@ -29,9 +32,8 @@ class CatalogClient {
 		var manager = new AuthorizedClientServiceOAuth2AuthorizedClientManager(registrations, authorizedClients);
 		var serviceToken = new OAuth2ClientHttpRequestInterceptor(manager);
 		serviceToken.setClientRegistrationIdResolver(request -> REGISTRATION);
-		// The token belongs to the service, so one cached token is shared by every Customer's request.
-		serviceToken.setPrincipalResolver(request -> new AnonymousAuthenticationToken("orders-service",
-				"orders-service", AuthorityUtils.createAuthorityList("ROLE_SERVICE")));
+		// The token belongs to the service, not the Customer, so one cached token serves every request.
+		serviceToken.setPrincipalResolver(request -> SERVICE);
 		this.http = builder.baseUrl(baseUrl).requestInterceptor(serviceToken).build();
 	}
 

@@ -1,7 +1,31 @@
-:root { font-family: system-ui, sans-serif; color-scheme: light dark; }
-body { margin: 0; }
-header { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid #8884; }
-header .who { margin-left: auto; }
-main { padding: 1rem; }
-ul[data-testid='products'] { list-style: none; padding: 0; max-width: 28rem; }
-ul[data-testid='products'] li { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #8882; }
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: light dark;
+}
+body {
+  margin: 0;
+}
+header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #8884;
+}
+header .who {
+  margin-left: auto;
+}
+main {
+  padding: 1rem;
+}
+ul[data-testid='products'] {
+  list-style: none;
+  padding: 0;
+  max-width: 28rem;
+}
+ul[data-testid='products'] li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #8882;
+}

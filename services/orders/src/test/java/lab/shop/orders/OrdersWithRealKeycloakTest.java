@@ -55,10 +55,9 @@ class OrdersWithRealKeycloakTest {
 
 	@DynamicPropertySource
 	static void realKeycloak(DynamicPropertyRegistry registry) {
-		String realm = keycloak.getAuthServerUrl() + "/realms/" + KeycloakTokens.REALM;
-		registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> realm);
-		registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri", () -> realm + "/protocol/openid-connect/certs");
-		registry.add("spring.security.oauth2.client.provider.keycloak.token-uri", () -> realm + "/protocol/openid-connect/token");
+		registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> KeycloakTokens.issuerUri(keycloak));
+		registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri", () -> KeycloakTokens.jwkSetUri(keycloak));
+		registry.add("spring.security.oauth2.client.provider.keycloak.token-uri", () -> KeycloakTokens.tokenUri(keycloak));
 		registry.add("spring.security.oauth2.client.registration.catalog.client-secret", () -> "lab-only-orders-service-secret");
 		registry.add("catalog.base-url", catalog::baseUrl);
 	}

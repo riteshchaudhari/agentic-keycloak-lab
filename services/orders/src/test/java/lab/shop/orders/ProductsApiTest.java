@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -21,7 +22,6 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.lessThanOrExactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -38,6 +38,12 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 @AutoConfigureMockMvc
 class ProductsApiTest {
 
+	private static final String TOKEN_PATH = "/realms/shop/protocol/openid-connect/token";
+
+	private static final String CATALOG_PRODUCTS = """
+			[{"id": "p-mug", "name": "Coffee Mug", "priceCents": 1250},
+			 {"id": "p-tee", "name": "Lab T-Shirt", "priceCents": 2400}]""";
+
 	@RegisterExtension
 	static WireMockExtension keycloak = WireMockExtension.newInstance().options(wireMockConfig().dynamicPort()).build();
 
@@ -48,7 +54,7 @@ class ProductsApiTest {
 	static void stubbedBoundaries(DynamicPropertyRegistry registry) {
 		registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri", () -> "http://unused.invalid/certs");
 		registry.add("spring.security.oauth2.client.provider.keycloak.token-uri",
-				() -> keycloak.baseUrl() + "/realms/shop/protocol/openid-connect/token");
+				() -> keycloak.baseUrl() + TOKEN_PATH);
 		registry.add("catalog.base-url", catalog::baseUrl);
 	}
 
@@ -58,14 +64,17 @@ class ProductsApiTest {
 	@Autowired
 	JwtAuthenticationConverter roleMapping;
 
+	@Autowired
+	OAuth2AuthorizedClientService cachedServiceTokens;
+
 	@BeforeEach
 	void stubKeycloakAndCatalog() {
-		keycloak.stubFor(post(urlEqualTo("/realms/shop/protocol/openid-connect/token"))
+		// Each test starts without a cached Orders service token, so token requests can be counted exactly.
+		cachedServiceTokens.removeAuthorizedClient("catalog", "orders-service");
+		keycloak.stubFor(post(urlEqualTo(TOKEN_PATH))
 			.willReturn(okJson("""
 					{"access_token": "orders-service-token", "token_type": "Bearer", "expires_in": 300}""")));
-		catalog.stubFor(get("/products").willReturn(okJson("""
-				[{"id": "p-mug", "name": "Coffee Mug", "priceCents": 1250},
-				 {"id": "p-tee", "name": "Lab T-Shirt", "priceCents": 2400}]""")));
+		catalog.stubFor(get("/products").willReturn(okJson(CATALOG_PRODUCTS)));
 	}
 
 	@Test
@@ -73,9 +82,7 @@ class ProductsApiTest {
 		var response = mvc.get().uri("/api/products").with(tokenWithRealmRoles("customer"));
 
 		assertThat(response).hasStatusOk();
-		assertThat(response).bodyJson().isEqualTo("""
-				[{"id": "p-mug", "name": "Coffee Mug", "priceCents": 1250},
-				 {"id": "p-tee", "name": "Lab T-Shirt", "priceCents": 2400}]""");
+		assertThat(response).bodyJson().isEqualTo(CATALOG_PRODUCTS);
 		catalog.verify(getRequestedFor(urlEqualTo("/products"))
 			.withHeader("Authorization", equalTo("Bearer orders-service-token")));
 	}
@@ -85,9 +92,9 @@ class ProductsApiTest {
 		assertThat(mvc.get().uri("/api/products").with(tokenFor("alice-sub", "customer"))).hasStatusOk();
 		assertThat(mvc.get().uri("/api/products").with(tokenFor("bob-sub", "customer"))).hasStatusOk();
 
-		// At most one: the shared Spring context may already hold the token from an earlier test.
-		keycloak.verify(lessThanOrExactly(1), postRequestedFor(urlEqualTo("/realms/shop/protocol/openid-connect/token")));
-		catalog.verify(2, getRequestedFor(urlEqualTo("/products")));
+		keycloak.verify(1, postRequestedFor(urlEqualTo(TOKEN_PATH)));
+		catalog.verify(2, getRequestedFor(urlEqualTo("/products"))
+			.withHeader("Authorization", equalTo("Bearer orders-service-token")));
 	}
 
 	@Test

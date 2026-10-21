@@ -1,7 +1,12 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
-import { authInterceptor, LogLevel, provideAuth, withAppInitializerAuthCheck } from 'angular-auth-oidc-client';
+import {
+  authInterceptor,
+  LogLevel,
+  provideAuth,
+  withAppInitializerAuthCheck,
+} from 'angular-auth-oidc-client';
 
 import { routes } from './app.routes';
 

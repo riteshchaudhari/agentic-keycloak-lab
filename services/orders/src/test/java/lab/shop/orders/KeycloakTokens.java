@@ -37,12 +37,16 @@ final class KeycloakTokens {
 		return new KeycloakContainer(IMAGE).withRealmImportFile("shop-realm.json");
 	}
 
-	String issuerUri() {
+	static String issuerUri(KeycloakContainer keycloak) {
 		return keycloak.getAuthServerUrl() + "/realms/" + REALM;
 	}
 
-	String jwkSetUri() {
-		return issuerUri() + "/protocol/openid-connect/certs";
+	static String jwkSetUri(KeycloakContainer keycloak) {
+		return issuerUri(keycloak) + "/protocol/openid-connect/certs";
+	}
+
+	static String tokenUri(KeycloakContainer keycloak) {
+		return issuerUri(keycloak) + "/protocol/openid-connect/token";
 	}
 
 	/** An access token for a seed account (alice, bob, ada). */
@@ -60,7 +64,7 @@ final class KeycloakTokens {
 		var body = new LinkedMultiValueMap<String, String>();
 		form.forEach(body::add);
 		Map<?, ?> response = http.post()
-			.uri(issuerUri() + "/protocol/openid-connect/token")
+			.uri(tokenUri(keycloak))
 			.contentType(MediaType.APPLICATION_FORM_URLENCODED)
 			.body(body)
 			.retrieve()

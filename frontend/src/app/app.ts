@@ -23,7 +23,9 @@ export class App {
   private readonly oidc = inject(OidcSecurityService);
 
   protected readonly isAuthenticated = computed(() => this.oidc.authenticated().isAuthenticated);
-  protected readonly username = computed(() => this.oidc.userData().userData?.preferred_username ?? '');
+  protected readonly username = computed(
+    () => this.oidc.userData().userData?.preferred_username ?? '',
+  );
 
   protected login(): void {
     this.oidc.authorize();

@@ -6,9 +6,18 @@
   "ssoSessionIdleTimeout": 1800,
   "roles": {
     "realm": [
-      { "name": "customer", "description": "Places Orders and sees only their own" },
-      { "name": "admin", "description": "Sees every Order; not a Customer" },
-      { "name": "catalog-reader", "description": "May read the Catalog. Only the orders-service service account has it" }
+      {
+        "name": "customer",
+        "description": "Places Orders and sees only their own"
+      },
+      {
+        "name": "admin",
+        "description": "Sees every Order; not a Customer"
+      },
+      {
+        "name": "catalog-reader",
+        "description": "May read the Catalog. Only the orders-service service account has it"
+      }
     ]
   },
   "clients": [
@@ -21,11 +30,15 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["http://localhost:4200/*"],
-      "webOrigins": ["http://localhost:4200"],
+      "redirectUris": [
+        "http://localhost:4200"
+      ],
+      "webOrigins": [
+        "http://localhost:4200"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "+"
+        "post.logout.redirect.uris": "http://localhost:4200"
       }
     },
     {
@@ -49,8 +62,16 @@
       "emailVerified": true,
       "firstName": "Alice",
       "lastName": "Customer",
-      "credentials": [{ "type": "password", "value": "alice", "temporary": false }],
-      "realmRoles": ["customer"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alice",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "customer"
+      ]
     },
     {
       "username": "bob",
@@ -59,8 +80,16 @@
       "emailVerified": true,
       "firstName": "Bob",
       "lastName": "Customer",
-      "credentials": [{ "type": "password", "value": "bob", "temporary": false }],
-      "realmRoles": ["customer"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "bob",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "customer"
+      ]
     },
     {
       "username": "ada",
@@ -69,14 +98,24 @@
       "emailVerified": true,
       "firstName": "Ada",
       "lastName": "Admin",
-      "credentials": [{ "type": "password", "value": "ada", "temporary": false }],
-      "realmRoles": ["admin"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ada",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin"
+      ]
     },
     {
       "username": "service-account-orders-service",
       "enabled": true,
       "serviceAccountClientId": "orders-service",
-      "realmRoles": ["catalog-reader"]
+      "realmRoles": [
+        "catalog-reader"
+      ]
     }
   ]
 }
