@@ -13,3 +13,6 @@ dist/
 # Env / secrets
 .env
 .env.*
+
+# Angular cache
+.angular/

@@ -1,0 +1,82 @@
+{
+  "realm": "shop",
+  "displayName": "Agentic Keycloak Lab Shop",
+  "enabled": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      { "name": "customer", "description": "Places Orders and sees only their own" },
+      { "name": "admin", "description": "Sees every Order; not a Customer" },
+      { "name": "catalog-reader", "description": "May read the Catalog. Only the orders-service service account has it" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "shop-frontend",
+      "name": "Shop frontend (public SPA client, ADR-0001)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      }
+    },
+    {
+      "clientId": "orders-service",
+      "name": "Orders service (client credentials to Catalog, ADR-0003)",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "lab-only-orders-service-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@shop.lab",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Customer",
+      "credentials": [{ "type": "password", "value": "alice", "temporary": false }],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "email": "bob@shop.lab",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "Customer",
+      "credentials": [{ "type": "password", "value": "bob", "temporary": false }],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "ada",
+      "enabled": true,
+      "email": "ada@shop.lab",
+      "emailVerified": true,
+      "firstName": "Ada",
+      "lastName": "Admin",
+      "credentials": [{ "type": "password", "value": "ada", "temporary": false }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "service-account-orders-service",
+      "enabled": true,
+      "serviceAccountClientId": "orders-service",
+      "realmRoles": ["catalog-reader"]
+    }
+  ]
+}

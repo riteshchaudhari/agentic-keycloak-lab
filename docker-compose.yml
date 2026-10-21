@@ -1,0 +1,62 @@
+# Agentic Keycloak Lab: the whole shop with one `docker compose up`.
+# Lab-only: secrets and passwords below are committed on purpose (see keycloak/README.md).
+
+name: agentic-keycloak-lab
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    # No volume on purpose: the realm is imported fresh on every start, so edits always take effect.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Every token's iss is http://localhost:8080/realms/shop, whoever asks (ADR-0002).
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak/shop-realm.json:/opt/keycloak/data/import/shop-realm.json:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      # The image has no curl; probe the readiness endpoint on the management port with bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  catalog:
+    build: ./services/catalog
+    # No host port: only Orders can reach the Catalog (ADR-0003).
+    environment:
+      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/shop
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/shop/protocol/openid-connect/certs
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  orders:
+    build: ./services/orders
+    environment:
+      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/shop
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/shop/protocol/openid-connect/certs
+      KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/shop/protocol/openid-connect/token
+      ORDERS_SERVICE_CLIENT_SECRET: lab-only-orders-service-secret
+      CATALOG_BASE_URL: http://catalog:8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      catalog:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    # Served on 4200 in compose and in `ng serve`, so Keycloak needs one redirect URI.
+    ports:
+      - "4200:8080"
+    depends_on:
+      - orders
