@@ -1,0 +1,77 @@
+# Guardrail for every change: nothing reaches main without all of this green.
+# Actions are pinned to commit SHAs (tags can move); the tag is noted beside each.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pins:
+    name: Versions pinned
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: ./scripts/check-pins.sh
+
+  service:
+    name: ${{ matrix.service }} tests
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [catalog, orders]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21.0.12
+          cache: maven
+          cache-dependency-path: services/${{ matrix.service }}/pom.xml
+      # Includes the real-Keycloak tests (Testcontainers uses the runner's Docker).
+      - run: ./mvnw -B verify
+        working-directory: services/${{ matrix.service }}
+
+  frontend:
+    name: Frontend format + build
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.3
+      - run: npx -y npm@11.6.2 ci
+      - run: npx prettier --check "src/**/*.{ts,html,css}"
+      - run: npx ng build
+
+  e2e:
+    name: Clean clone + browser journeys
+    runs-on: ubuntu-24.04
+    needs: [pins, service, frontend]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.3
+      - name: Install Playwright browser dependencies
+        working-directory: e2e
+        run: npx -y npm@11.6.2 ci && npx playwright install --with-deps chromium
+      - run: ./scripts/clean-clone-e2e.sh
+      - name: Keep Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-traces
+          path: e2e/test-results/

@@ -23,7 +23,11 @@ Open http://localhost:4200 and log in as **alice / alice** (Customer). Other see
 (cd services/catalog && ./mvnw verify)   # needs Docker (real Keycloak via Testcontainers)
 (cd services/orders && ./mvnw verify)
 (cd e2e && npm ci && npx playwright install chromium && npx playwright test)   # needs the system running
+./scripts/check-pins.sh        # every version pinned exactly
+./scripts/clean-clone-e2e.sh   # fresh copy -> docker compose up -> Playwright -> teardown
 ```
+
+CI (`.github/workflows/ci.yml`) runs all of the above on every pull request.
 
 ## Develop the frontend live
 
